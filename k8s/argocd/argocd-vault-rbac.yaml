@@ -14,6 +14,21 @@ rules:
     resources: ["serviceaccounts"]
     verbs: ["get", "list", "create", "update", "patch", "delete"]
   
+  # Allow managing services
+  - apiGroups: [""]
+    resources: ["services"]
+    verbs: ["get", "list", "create", "update", "patch", "delete"]
+  
+  # Allow managing deployments
+  - apiGroups: ["apps"]
+    resources: ["deployments"]
+    verbs: ["get", "list", "create", "update", "patch", "delete"]
+  
+  # Allow managing OpenShift routes
+  - apiGroups: ["route.openshift.io"]
+    resources: ["routes"]
+    verbs: ["get", "list", "create", "update", "patch", "delete"]
+  
   # Allow managing Vault CRDs
   - apiGroups: ["secrets.hashicorp.com"]
     resources:

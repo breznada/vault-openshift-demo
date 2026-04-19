@@ -22,7 +22,7 @@ spec:
       
       containers:
       - name: vault-demo-app
-        image: quay.io/your-org/vault-demo-app:latest
+        image: quay.io/ibm-tec/vault-demo-app:latest
         imagePullPolicy: Always
         
         ports:
