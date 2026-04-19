@@ -12,7 +12,7 @@ spec:
   
   # Kubernetes authentication method
   method: kubernetes
-  mount: kubernetes
+  mount: openshift
   
   kubernetes:
     # Role configured in Vault for this application

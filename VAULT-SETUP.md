@@ -32,6 +32,21 @@ vault kv put secret/demo/static \
 
 ```bash
 vault kv get secret/demo/static
+
+### 1.4 Create CSI Secret (for Card 3)
+
+```bash
+vault kv put secret/demo/csi \
+    top_secret="This is a TOP SECRET value from CSI mount!" \
+    access_level="classified" \
+    mounted_at="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+```
+
+### 1.5 Verify CSI Secret
+
+```bash
+vault kv get secret/demo/csi
+```
 ```
 
 ---
@@ -209,6 +224,11 @@ vault read auth/kubernetes/config
 vault policy write vault-demo-role - <<EOF
 # Allow reading static secrets
 path "secret/data/demo/static" {
+  capabilities = ["read"]
+}
+
+# Allow reading CSI secrets
+path "secret/data/demo/csi" {
   capabilities = ["read"]
 }
 

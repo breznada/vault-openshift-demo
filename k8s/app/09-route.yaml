@@ -1,0 +1,28 @@
+---
+apiVersion: route.openshift.io/v1
+kind: Route
+metadata:
+  name: vault-demo-app
+  namespace: vault-demo
+  annotations:
+    argocd.argoproj.io/sync-wave: "2"
+  labels:
+    app: vault-demo-app
+spec:
+  host: vault-demo-app-vault-demo.apps.ocp18.tec.cz.ibm.com
+  to:
+    kind: Service
+    name: vault-demo-app
+    weight: 100
+  port:
+    targetPort: http
+  tls:
+    # Card 4: Use certificate from VaultPKISecret
+    termination: edge
+    insecureEdgeTerminationPolicy: Redirect
+    # Reference the TLS secret created by VaultPKISecret
+    externalCertificate:
+      name: vault-pki-cert
+  wildcardPolicy: None
+
+# Made with Bob

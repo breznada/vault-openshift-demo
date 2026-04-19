@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vault Secrets Operator Demo</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        header {
+            text-align: center;
+            color: white;
+            margin-bottom: 40px;
+        }
+
+        h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
+        }
+
+        .subtitle {
+            font-size: 1.2rem;
+            opacity: 0.9;
+        }
+
+        .dashboard {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+
+        .card {
+            background: white;
+            border-radius: 12px;
+            padding: 24px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 40px rgba(0,0,0,0.3);
+        }
+
+        .card-header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 16px;
+            padding-bottom: 12px;
+            border-bottom: 2px solid #f0f0f0;
+        }
+
+        .card-icon {
+            font-size: 2rem;
+            margin-right: 12px;
+        }
+
+        .card-title {
+            font-size: 1.3rem;
+            font-weight: 600;
+            color: #333;
+        }
+
+        .card-method {
+            font-size: 0.85rem;
+            color: #666;
+            margin-top: 4px;
+        }
+
+        .card-content {
+            min-height: 120px;
+        }
+
+        .status {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            margin-bottom: 12px;
+        }
+
+        .status-success {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .status-error {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        .status-loading {
+            background: #fff3cd;
+            color: #856404;
+        }
+
+        .data-item {
+            margin: 8px 0;
+            padding: 8px;
+            background: #f8f9fa;
+            border-radius: 6px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9rem;
+        }
+
+        .data-label {
+            font-weight: 600;
+            color: #495057;
+            margin-right: 8px;
+        }
+
+        .data-value {
+            color: #212529;
+            word-break: break-all;
+        }
+
+        .error-message {
+            color: #dc3545;
+            padding: 12px;
+            background: #f8d7da;
+            border-radius: 6px;
+            border-left: 4px solid #dc3545;
+        }
+
+        .refresh-info {
+            text-align: center;
+            color: white;
+            margin-top: 20px;
+            font-size: 0.9rem;
+            opacity: 0.8;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: white;
+            font-size: 1.2rem;
+        }
+
+        .spinner {
+            border: 4px solid rgba(255,255,255,0.3);
+            border-top: 4px solid white;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 20px auto;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .highlight {
+            background: linear-gradient(120deg, #84fab0 0%, #8fd3f4 100%);
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-weight: 600;
+        }
+
+        .timestamp {
+            text-align: center;
+            color: white;
+            margin-top: 10px;
+            font-size: 0.85rem;
+            opacity: 0.7;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🔐 HashiCorp Vault Secrets Operator</h1>
+            <p class="subtitle">Four Secret Delivery Methods Demonstration</p>
+        </header>
+
+        <div id="loading" class="loading">
+            <div class="spinner"></div>
+            <p>Loading secrets...</p>
+        </div>
+
+        <div id="dashboard" class="dashboard" style="display: none;">
+            <!-- Card 1: Static Secret -->
+            <div class="card">
+                <div class="card-header">
+                    <div class="card-icon">🔑</div>
+                    <div>
+                        <div class="card-title">Static Secret</div>
+                        <div class="card-method">Environment Variable</div>
+                    </div>
+                </div>
+                <div class="card-content" id="static-content"></div>
+            </div>
+
+            <!-- Card 2: Dynamic Secret -->
+            <div class="card">
+                <div class="card-header">
+                    <div class="card-icon">🔄</div>
+                    <div>
+                        <div class="card-title">Dynamic Secret</div>
+                        <div class="card-method">File Mount (Rotating)</div>
+                    </div>
+                </div>
+                <div class="card-content" id="dynamic-content"></div>
+            </div>
+
+            <!-- Card 3: CSI Secret -->
+            <div class="card">
+                <div class="card-header">
+                    <div class="card-icon">💾</div>
+                    <div>
+                        <div class="card-title">CSI Secret</div>
+                        <div class="card-method">Direct Mount (Memory-Only)</div>
+                    </div>
+                </div>
+                <div class="card-content" id="csi-content"></div>
+            </div>
+
+            <!-- Card 4: PKI Certificate -->
+            <div class="card">
+                <div class="card-header">
+                    <div class="card-icon">📜</div>
+                    <div>
+                        <div class="card-title">PKI Certificate</div>
+                        <div class="card-method">TLS Certificate Rotation</div>
+                    </div>
+                </div>
+                <div class="card-content" id="pki-content"></div>
+            </div>
+        </div>
+
+        <div class="timestamp" id="timestamp"></div>
+        <div class="refresh-info">
+            ⟳ Auto-refreshing every 5 seconds
+        </div>
+    </div>
+
+    <script>
+        function renderCard(elementId, data) {
+            const element = document.getElementById(elementId);
+            
+            if (data.status === 'error') {
+                element.innerHTML = `
+                    <span class="status status-error">ERROR</span>
+                    <div class="error-message">${data.error}</div>
+                `;
+                return;
+            }
+
+            let content = `<span class="status status-success">✓ ACTIVE</span>`;
+            
+            for (const [key, value] of Object.entries(data.data)) {
+                if (key.startsWith('_')) continue;
+                
+                const displayKey = key.replace(/_/g, ' ').toUpperCase();
+                let displayValue = value;
+                
+                // Mask sensitive data partially
+                if (key.includes('password') || key.includes('key')) {
+                    displayValue = value.substring(0, 8) + '••••••••';
+                }
+                
+                content += `
+                    <div class="data-item">
+                        <span class="data-label">${displayKey}:</span>
+                        <span class="data-value">${displayValue}</span>
+                    </div>
+                `;
+            }
+            
+            element.innerHTML = content;
+        }
+
+        async function fetchSecrets() {
+            try {
+                const response = await fetch('/api/secrets');
+                const data = await response.json();
+                
+                document.getElementById('loading').style.display = 'none';
+                document.getElementById('dashboard').style.display = 'grid';
+                
+                renderCard('static-content', data.static);
+                renderCard('dynamic-content', data.dynamic);
+                renderCard('csi-content', data.csi);
+                renderCard('pki-content', data.pki);
+                
+                document.getElementById('timestamp').textContent = 
+                    `Last updated: ${new Date(data.timestamp).toLocaleString()}`;
+                
+            } catch (error) {
+                console.error('Error fetching secrets:', error);
+                document.getElementById('loading').innerHTML = `
+                    <div class="error-message">
+                        Failed to load secrets: ${error.message}
+                    </div>
+                `;
+            }
+        }
+
+        // Initial load
+        fetchSecrets();
+
+        // Auto-refresh every 5 seconds
+        setInterval(fetchSecrets, 5000);
+    </script>
+</body>
+</html>

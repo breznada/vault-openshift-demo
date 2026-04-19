@@ -1,0 +1,121 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: vault-demo-app
+  namespace: vault-demo
+  annotations:
+    argocd.argoproj.io/sync-wave: "2"
+  labels:
+    app: vault-demo-app
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: vault-demo-app
+  template:
+    metadata:
+      labels:
+        app: vault-demo-app
+    spec:
+      serviceAccountName: vault-demo-app
+      
+      containers:
+      - name: vault-demo-app
+        image: quay.io/your-org/vault-demo-app:latest
+        imagePullPolicy: Always
+        
+        ports:
+        - containerPort: 8080
+          name: http
+          protocol: TCP
+        
+        # Card 1: Static secrets via environment variables
+        env:
+        - name: API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: vault-static-secret
+              key: api_key
+        - name: ENVIRONMENT
+          valueFrom:
+            secretKeyRef:
+              name: vault-static-secret
+              key: environment
+        - name: CREATED_AT
+          valueFrom:
+            secretKeyRef:
+              name: vault-static-secret
+              key: created_at
+        - name: ROUTE_HOSTNAME
+          value: "vault-demo-app-vault-demo.apps.ocp18.tec.cz.ibm.com"
+        - name: PORT
+          value: "8080"
+        
+        volumeMounts:
+        # Card 2: Dynamic secrets via file mount
+        - name: dynamic-secrets
+          mountPath: /vault/secrets/dynamic
+          readOnly: true
+        
+        # Card 3: CSI secrets via direct mount
+        - name: csi-secrets
+          mountPath: /mnt/secrets/vault-data
+          readOnly: true
+        
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "100m"
+          limits:
+            memory: "256Mi"
+            cpu: "200m"
+        
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8080
+          initialDelaySeconds: 10
+          periodSeconds: 30
+          timeoutSeconds: 5
+          failureThreshold: 3
+        
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 8080
+          initialDelaySeconds: 5
+          periodSeconds: 10
+          timeoutSeconds: 3
+          failureThreshold: 3
+        
+        securityContext:
+          allowPrivilegeEscalation: false
+          runAsNonRoot: true
+          runAsUser: 1001
+          capabilities:
+            drop:
+            - ALL
+          seccompProfile:
+            type: RuntimeDefault
+      
+      volumes:
+      # Card 2: Dynamic database credentials (file mount)
+      - name: dynamic-secrets
+        secret:
+          secretName: vault-dynamic-secret
+          defaultMode: 0400
+      
+      # Card 3: CSI secrets (direct mount from Vault)
+      - name: csi-secrets
+        secret:
+          secretName: vault-csi-secret
+          defaultMode: 0400
+      
+      securityContext:
+        fsGroup: 1001
+        runAsNonRoot: true
+        seccompProfile:
+          type: RuntimeDefault
+
+# Made with Bob
