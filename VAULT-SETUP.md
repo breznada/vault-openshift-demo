@@ -233,7 +233,7 @@ path "secret/data/demo/csi" {
 }
 
 # Allow reading database credentials
-path "database/creds/demo-role" {
+path "database/creds/vault-webapp-role" {
   capabilities = ["read"]
 }
 

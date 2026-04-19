@@ -1,16 +1,17 @@
 const express = require('express');
 const fs = require('fs');
 const https = require('https');
-const tls = require('tls');
 
 const app = express();
-const PORT = process.env.PORT || 8080;
+const PORT = process.env.PORT || 8443;
+const TLS_CERT_PATH = process.env.TLS_CERT_PATH || '/vault/secrets/pki/tls.crt';
+const TLS_KEY_PATH = process.env.TLS_KEY_PATH || '/vault/secrets/pki/tls.key';
 
 // Serve static files
 app.use(express.static('public'));
 
 // API endpoint to get all secrets data
-app.get('/api/secrets', (req, res) => {
+app.get('/api/secrets', async (req, res) => {
   const secretsData = {
     static: getStaticSecret(),
     dynamic: getDynamicSecret(),
@@ -130,83 +131,111 @@ function getCSISecret() {
   }
 }
 
-// Card 4: PKI Certificate Information
+// Card 4: PKI Certificate Information (from mounted Vault cert)
 function getPKIInfo() {
   try {
-    const routeHostname = process.env.ROUTE_HOSTNAME || 'vault-demo-app-vault-demo.apps.ocp18.tec.cz.ibm.com';
-    
-    return new Promise((resolve) => {
-      const options = {
-        host: routeHostname,
-        port: 443,
-        method: 'GET',
-        rejectUnauthorized: false // For demo purposes
+    if (!fs.existsSync(TLS_CERT_PATH)) {
+      return {
+        status: 'error',
+        method: 'PKI Certificate (Vault-Managed TLS)',
+        error: 'Certificate file not found at ' + TLS_CERT_PATH
       };
-      
-      const req = https.request(options, (res) => {
-        const cert = res.socket.getPeerCertificate();
-        
-        if (cert && Object.keys(cert).length > 0) {
-          resolve({
-            status: 'success',
-            method: 'TLS Certificate (PKI)',
-            data: {
-              subject: cert.subject.CN,
-              issuer: cert.issuer.CN,
-              serial_number: cert.serialNumber,
-              valid_from: cert.valid_from,
-              valid_to: cert.valid_to,
-              fingerprint: cert.fingerprint,
-              days_remaining: Math.floor((new Date(cert.valid_to) - new Date()) / (1000 * 60 * 60 * 24))
-            }
-          });
-        } else {
-          resolve({
-            status: 'error',
-            method: 'TLS Certificate (PKI)',
-            error: 'No certificate found'
-          });
-        }
-      });
-      
-      req.on('error', (error) => {
-        resolve({
-          status: 'error',
-          method: 'TLS Certificate (PKI)',
-          error: error.message
-        });
-      });
-      
-      req.end();
-    });
+    }
+    
+    const certContent = fs.readFileSync(TLS_CERT_PATH, 'utf8');
+    const keyExists = fs.existsSync(TLS_KEY_PATH);
+    
+    // Get file stats for rotation tracking
+    const certStats = fs.statSync(TLS_CERT_PATH);
+    const issuedAt = certStats.mtime;
+    const now = new Date();
+    const ageSeconds = Math.floor((now - issuedAt) / 1000);
+    
+    // Calculate expiration (5 minutes TTL for demo)
+    const expiresAt = new Date(issuedAt.getTime() + (5 * 60 * 1000));
+    const secondsRemaining = Math.floor((expiresAt - now) / 1000);
+    
+    // Extract cert info
+    const certLines = certContent.split('\n');
+    const certData = certLines.filter(line => 
+      !line.includes('BEGIN CERTIFICATE') && 
+      !line.includes('END CERTIFICATE') &&
+      line.trim() !== ''
+    ).join('');
+    
+    return {
+      status: 'success',
+      method: 'PKI Certificate (Vault-Managed TLS)',
+      data: {
+        issued_at: issuedAt.toISOString(),
+        expires_at: expiresAt.toISOString(),
+        age_seconds: ageSeconds,
+        seconds_remaining: Math.max(0, secondsRemaining),
+        rotation_in: secondsRemaining > 0 ? `${secondsRemaining}s` : 'ROTATING NOW',
+        cert_size_bytes: certContent.length,
+        has_private_key: keyExists ? 'Yes' : 'No',
+        actively_serving: 'Yes - This HTTPS connection uses this cert!'
+      }
+    };
   } catch (error) {
-    return Promise.resolve({
+    return {
       status: 'error',
-      method: 'TLS Certificate (PKI)',
+      method: 'PKI Certificate (Vault-Managed TLS)',
       error: error.message
-    });
+    };
   }
 }
 
-// Modified API endpoint to handle async PKI
-app.get('/api/secrets', async (req, res) => {
-  const secretsData = {
-    static: getStaticSecret(),
-    dynamic: getDynamicSecret(),
-    csi: getCSISecret(),
-    pki: await getPKIInfo(),
-    timestamp: new Date().toISOString()
-  };
-  
-  res.json(secretsData);
-});
+// Start HTTPS server with Vault certificate
+function startServer() {
+  try {
+    // Check if certificate files exist
+    if (!fs.existsSync(TLS_CERT_PATH) || !fs.existsSync(TLS_KEY_PATH)) {
+      console.error('❌ TLS certificate or key not found!');
+      console.error(`   Certificate: ${TLS_CERT_PATH}`);
+      console.error(`   Key: ${TLS_KEY_PATH}`);
+      console.error('   Waiting for Vault PKI secret to be mounted...');
+      
+      // Retry after 5 seconds
+      setTimeout(startServer, 5000);
+      return;
+    }
+    
+    const httpsOptions = {
+      cert: fs.readFileSync(TLS_CERT_PATH),
+      key: fs.readFileSync(TLS_KEY_PATH)
+    };
+    
+    const server = https.createServer(httpsOptions, app);
+    
+    server.listen(PORT, '0.0.0.0', () => {
+      console.log('🔐 Vault Demo Dashboard (HTTPS) running');
+      console.log(`📊 Dashboard: https://localhost:${PORT}`);
+      console.log(`🔍 API: https://localhost:${PORT}/api/secrets`);
+      console.log(`💚 Health: https://localhost:${PORT}/health`);
+      console.log(`🔑 Using Vault PKI Certificate from: ${TLS_CERT_PATH}`);
+      console.log('✨ Certificate rotates automatically every ~5 minutes!');
+    });
+    
+    // Watch for certificate changes and reload
+    fs.watch(TLS_CERT_PATH, (eventType) => {
+      if (eventType === 'change') {
+        console.log('🔄 Certificate changed! Reloading...');
+        server.close(() => {
+          console.log('♻️  Server restarted with new certificate');
+          startServer();
+        });
+      }
+    });
+    
+  } catch (error) {
+    console.error('❌ Failed to start HTTPS server:', error.message);
+    console.error('   Retrying in 5 seconds...');
+    setTimeout(startServer, 5000);
+  }
+}
 
-// Start server
-app.listen(PORT, '0.0.0.0', () => {
-  console.log(`🚀 Vault Demo Dashboard running on port ${PORT}`);
-  console.log(`📊 Dashboard: http://localhost:${PORT}`);
-  console.log(`🔍 API: http://localhost:${PORT}/api/secrets`);
-  console.log(`💚 Health: http://localhost:${PORT}/health`);
-});
+// Start the server
+startServer();
 
 // Made with Bob

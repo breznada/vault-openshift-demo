@@ -16,14 +16,11 @@ spec:
     name: vault-demo-app
     weight: 100
   port:
-    targetPort: http
+    targetPort: https
   tls:
-    # Card 4: Use certificate from VaultPKISecret
-    termination: edge
+    # Passthrough termination - app handles TLS with Vault certificate
+    termination: passthrough
     insecureEdgeTerminationPolicy: Redirect
-    # Reference the TLS secret created by VaultPKISecret
-    externalCertificate:
-      name: vault-pki-cert
   wildcardPolicy: None
 
 # Made with Bob
