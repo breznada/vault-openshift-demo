@@ -1,0 +1,28 @@
+---
+apiVersion: secrets.hashicorp.com/v1beta1
+kind: VaultAuth
+metadata:
+  name: vault-auth
+  namespace: vault-demo
+  annotations:
+    argocd.argoproj.io/sync-wave: "0"
+spec:
+  # Reference to the VaultConnection
+  vaultConnectionRef: vault-connection
+  
+  # Kubernetes authentication method
+  method: kubernetes
+  mount: kubernetes
+  
+  kubernetes:
+    # Role configured in Vault for this application
+    role: vault-demo-role
+    
+    # Service account to use for authentication
+    serviceAccount: vault-demo-app
+    
+    # Optional: Audiences for the service account token
+    # audiences:
+    #   - vault
+
+# Made with Bob

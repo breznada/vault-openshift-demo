@@ -1,0 +1,16 @@
+---
+apiVersion: secrets.hashicorp.com/v1beta1
+kind: VaultConnection
+metadata:
+  name: vault-connection
+  namespace: vault-demo
+  annotations:
+    argocd.argoproj.io/sync-wave: "0"
+spec:
+  # Address of the Vault server
+  address: http://vault.tec.cz.ibm.com:8200
+  
+  # Skip TLS verification since using HTTP
+  skipTLSVerify: false
+
+# Made with Bob
