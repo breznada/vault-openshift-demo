@@ -13,7 +13,7 @@
 
         body {
             font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: linear-gradient(135deg, #0f2027 0%, #203a43 50%, #2c5364 100%);
             min-height: 100vh;
             padding: 20px;
         }
@@ -43,37 +43,6 @@
             font-weight: 300;
         }
 
-        .stats-bar {
-            display: flex;
-            gap: 15px;
-            justify-content: center;
-            margin-bottom: 30px;
-            flex-wrap: wrap;
-        }
-
-        .stat-item {
-            background: rgba(255,255,255,0.15);
-            backdrop-filter: blur(10px);
-            padding: 12px 24px;
-            border-radius: 12px;
-            color: white;
-            font-size: 0.9rem;
-            border: 1px solid rgba(255,255,255,0.2);
-            animation: fadeIn 0.8s ease-out;
-        }
-
-        .stat-label {
-            opacity: 0.8;
-            font-size: 0.75rem;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-        }
-
-        .stat-value {
-            font-size: 1.4rem;
-            font-weight: 700;
-            margin-top: 4px;
-        }
 
         .dashboard {
             display: grid;
@@ -90,29 +59,11 @@
             transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
             position: relative;
             overflow: hidden;
-            animation: slideUp 0.6s ease-out;
-        }
-
-        .card::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            height: 4px;
-            background: linear-gradient(90deg, #667eea, #764ba2);
-            transform: scaleX(0);
-            transform-origin: left;
-            transition: transform 0.3s ease;
-        }
-
-        .card.changed::before {
-            animation: progressBar 0.6s ease-out;
+            border: 3px solid transparent;
         }
 
         .card.changed {
-            animation: pulse 0.6s ease-out;
-            box-shadow: 0 20px 60px rgba(102, 126, 234, 0.4);
+            animation: redBorderFlash 3s ease-out;
         }
 
         .card:hover {
@@ -175,7 +126,7 @@
         .badge-rotating {
             background: linear-gradient(135deg, #ed8936, #dd6b20);
             color: white;
-            animation: pulse 1s infinite;
+            animation: badgePulse 1s infinite;
         }
 
         .card-content {
@@ -191,7 +142,7 @@
             padding: 12px;
             background: linear-gradient(135deg, #f7fafc 0%, #edf2f7 100%);
             border-radius: 8px;
-            border-left: 3px solid #667eea;
+            border-left: 3px solid #4299e1;
             transition: all 0.3s ease;
         }
 
@@ -201,7 +152,7 @@
         }
 
         .data-item.changed {
-            animation: highlight 0.6s ease-out;
+            animation: itemHighlight 0.8s ease-out;
         }
 
         .data-label {
@@ -224,7 +175,7 @@
         .countdown {
             font-size: 1.8rem;
             font-weight: 700;
-            color: #667eea;
+            color: #4299e1;
             text-align: center;
             padding: 16px;
             background: linear-gradient(135deg, #f7fafc 0%, #edf2f7 100%);
@@ -234,12 +185,12 @@
 
         .countdown.warning {
             color: #ed8936;
-            animation: pulse 1s infinite;
+            animation: badgePulse 1s infinite;
         }
 
         .countdown.critical {
             color: #f56565;
-            animation: pulse 0.5s infinite;
+            animation: badgePulse 0.5s infinite;
         }
 
         .error-message {
@@ -285,7 +236,7 @@
             background: #48bb78;
             border-radius: 50%;
             margin-right: 8px;
-            animation: pulse 2s infinite;
+            animation: indicatorPulse 2s infinite;
         }
 
         .change-indicator {
@@ -308,16 +259,6 @@
             to { opacity: 1; }
         }
 
-        @keyframes slideUp {
-            from {
-                opacity: 0;
-                transform: translateY(30px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
 
         @keyframes slideIn {
             from {
@@ -330,9 +271,29 @@
             }
         }
 
-        @keyframes pulse {
-            0%, 100% { transform: scale(1); opacity: 1; }
-            50% { transform: scale(1.05); opacity: 0.9; }
+        @keyframes redBorderFlash {
+            0% {
+                border-color: transparent;
+                box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            }
+            10%, 90% {
+                border-color: #f56565;
+                box-shadow: 0 20px 60px rgba(245, 101, 101, 0.6);
+            }
+            100% {
+                border-color: transparent;
+                box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            }
+        }
+
+        @keyframes badgePulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
+
+        @keyframes indicatorPulse {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.5; transform: scale(0.8); }
         }
 
         @keyframes spin {
@@ -340,15 +301,17 @@
             100% { transform: rotate(360deg); }
         }
 
-        @keyframes highlight {
-            0% { background: linear-gradient(135deg, #fef5e7 0%, #fdeaa8 100%); }
-            100% { background: linear-gradient(135deg, #f7fafc 0%, #edf2f7 100%); }
+        @keyframes itemHighlight {
+            0% { 
+                background: linear-gradient(135deg, #fef5e7 0%, #fdeaa8 100%);
+                transform: scale(1.02);
+            }
+            100% { 
+                background: linear-gradient(135deg, #f7fafc 0%, #edf2f7 100%);
+                transform: scale(1);
+            }
         }
 
-        @keyframes progressBar {
-            from { transform: scaleX(0); }
-            to { transform: scaleX(1); }
-        }
 
         @media (max-width: 768px) {
             h1 { font-size: 2rem; }
@@ -364,24 +327,6 @@
             <p class="subtitle">Four Secret Delivery Methods • Live Rotation Demo</p>
         </header>
 
-        <div class="stats-bar" id="stats-bar">
-            <div class="stat-item">
-                <div class="stat-label">Total Refreshes</div>
-                <div class="stat-value" id="refresh-count">0</div>
-            </div>
-            <div class="stat-item">
-                <div class="stat-label">Changes Detected</div>
-                <div class="stat-value" id="change-count">0</div>
-            </div>
-            <div class="stat-item">
-                <div class="stat-label">Uptime</div>
-                <div class="stat-value" id="uptime">0s</div>
-            </div>
-            <div class="stat-item">
-                <div class="stat-label">Next Refresh</div>
-                <div class="stat-value" id="next-refresh">5s</div>
-            </div>
-        </div>
 
         <div id="loading" class="loading">
             <div class="spinner"></div>
@@ -394,65 +339,70 @@
 
         <div class="footer">
             <span class="refresh-indicator"></span>
-            Auto-refreshing every 5 seconds • Last updated: <span id="last-update">Never</span>
+            Checking for changes every second • Last updated: <span id="last-update">Never</span>
         </div>
     </div>
 
     <script>
-        let refreshCount = 0;
-        let changeCount = 0;
-        let startTime = Date.now();
         let previousData = {};
-        let nextRefreshCountdown = 5;
+        let changedCards = new Set();
 
         const cardConfig = {
-            static: { icon: '🔑', title: 'Static Secret', color: '#667eea' },
+            static: { icon: '🔑', title: 'Static Secret', color: '#4299e1' },
             dynamic: { icon: '🔄', title: 'Dynamic Secret', color: '#48bb78' },
             csi: { icon: '💾', title: 'CSI Secret', color: '#ed8936' },
             pki: { icon: '📜', title: 'PKI Certificate', color: '#9f7aea' }
         };
 
-        function formatUptime(ms) {
-            const seconds = Math.floor(ms / 1000);
-            const minutes = Math.floor(seconds / 60);
-            const hours = Math.floor(minutes / 60);
-            
-            if (hours > 0) return `${hours}h ${minutes % 60}m`;
-            if (minutes > 0) return `${minutes}m ${seconds % 60}s`;
-            return `${seconds}s`;
-        }
 
         function detectChanges(cardId, newData) {
             const oldData = previousData[cardId];
             if (!oldData) {
                 previousData[cardId] = JSON.stringify(newData);
-                return false;
+                return { changed: false, changedFields: [] };
             }
             
-            const changed = JSON.stringify(newData) !== oldData;
+            const oldObj = JSON.parse(oldData);
+            const changedFields = [];
+            
+            // Compare each field
+            if (newData.data && oldObj.data) {
+                for (const key in newData.data) {
+                    // Skip rotation_in field for change detection (it updates every second)
+                    if (key === 'rotation_in') {
+                        continue;
+                    }
+                    
+                    if (newData.data[key] !== oldObj.data[key]) {
+                        changedFields.push(key);
+                    }
+                }
+            }
+            
+            // Never show red border for PKI card
+            const changed = cardId !== 'pki' && changedFields.length > 0;
+            
             if (changed) {
                 previousData[cardId] = JSON.stringify(newData);
-                changeCount++;
-                document.getElementById('change-count').textContent = changeCount;
+                changedCards.add(cardId);
             }
-            return changed;
+            
+            return { changed, changedFields };
         }
 
-        function renderCard(cardId, data) {
+        function renderCard(cardId, data, changeInfo) {
             const config = cardConfig[cardId];
-            const changed = detectChanges(cardId, data);
+            const { changed, changedFields } = changeInfo;
             
             let statusBadge = '';
             if (data.status === 'error') {
                 statusBadge = '<span class="card-badge badge-error">ERROR</span>';
-            } else if (cardId === 'pki' && data.data && data.data.seconds_remaining < 60) {
-                statusBadge = '<span class="card-badge badge-rotating">ROTATING</span>';
             } else {
                 statusBadge = '<span class="card-badge badge-success">ACTIVE</span>';
             }
 
             let content = `
-                <div class="card ${changed ? 'changed' : ''}" style="animation-delay: ${Object.keys(cardConfig).indexOf(cardId) * 0.1}s">
+                <div class="card ${changed ? 'changed' : ''}">
                     ${changed ? '<div class="change-indicator">UPDATED</div>' : ''}
                     <div class="card-header">
                         <div class="card-title-section">
@@ -473,33 +423,14 @@
                 content += '<div class="data-grid">';
                 
                 for (const [key, value] of Object.entries(data.data)) {
-                    if (key.startsWith('_')) continue;
-                    
                     const displayKey = key.replace(/_/g, ' ').toUpperCase();
-                    let displayValue = value;
+                    const displayValue = value; // Show full value for demo
                     
-                    // Mask sensitive data
-                    if (key.includes('password') || key.includes('key')) {
-                        displayValue = value.substring(0, 12) + '••••••••';
-                    }
-                    
-                    // Special handling for countdown
-                    if (key === 'seconds_remaining' && cardId === 'pki') {
-                        const seconds = parseInt(value);
-                        let countdownClass = '';
-                        if (seconds < 30) countdownClass = 'critical';
-                        else if (seconds < 60) countdownClass = 'warning';
-                        
-                        content += `
-                            <div class="countdown ${countdownClass}">
-                                ⏱️ ${seconds}s until rotation
-                            </div>
-                        `;
-                        continue;
-                    }
+                    // Check if this specific field changed
+                    const fieldChanged = changedFields.includes(key);
                     
                     content += `
-                        <div class="data-item ${changed ? 'changed' : ''}">
+                        <div class="data-item ${fieldChanged ? 'changed' : ''}">
                             <div class="data-label">${displayKey}</div>
                             <div class="data-value">${displayValue}</div>
                         </div>
@@ -518,21 +449,24 @@
                 const response = await fetch('/api/secrets');
                 const data = await response.json();
                 
-                refreshCount++;
-                document.getElementById('refresh-count').textContent = refreshCount;
-                document.getElementById('uptime').textContent = formatUptime(Date.now() - startTime);
+                // Detect changes for each card
+                const staticChange = detectChanges('static', data.static);
+                const dynamicChange = detectChanges('dynamic', data.dynamic);
+                const csiChange = detectChanges('csi', data.csi);
+                const pkiChange = detectChanges('pki', data.pki);
                 
+                // Always update UI (refresh every second)
                 document.getElementById('loading').style.display = 'none';
                 const dashboard = document.getElementById('dashboard');
                 dashboard.style.display = 'grid';
                 
-                dashboard.innerHTML = 
-                    renderCard('static', data.static) +
-                    renderCard('dynamic', data.dynamic) +
-                    renderCard('csi', data.csi) +
-                    renderCard('pki', data.pki);
+                dashboard.innerHTML =
+                    renderCard('static', data.static, staticChange) +
+                    renderCard('dynamic', data.dynamic, dynamicChange) +
+                    renderCard('csi', data.csi, csiChange) +
+                    renderCard('pki', data.pki, pkiChange);
                 
-                document.getElementById('last-update').textContent = 
+                document.getElementById('last-update').textContent =
                     new Date(data.timestamp).toLocaleTimeString();
                 
             } catch (error) {
@@ -545,23 +479,11 @@
             }
         }
 
-        // Countdown timer
-        setInterval(() => {
-            nextRefreshCountdown--;
-            if (nextRefreshCountdown <= 0) {
-                nextRefreshCountdown = 5;
-            }
-            document.getElementById('next-refresh').textContent = nextRefreshCountdown + 's';
-        }, 1000);
-
         // Initial load
         fetchSecrets();
 
-        // Auto-refresh every 5 seconds
-        setInterval(() => {
-            fetchSecrets();
-            nextRefreshCountdown = 5;
-        }, 5000);
+        // Auto-refresh every 1 second
+        setInterval(fetchSecrets, 1000);
     </script>
 </body>
 </html>

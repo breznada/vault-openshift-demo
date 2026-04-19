@@ -78,7 +78,15 @@ function getDynamicSecret() {
     
     // Get file modification time for rotation tracking
     const stats = fs.statSync(secretPath);
-    data._last_updated = stats.mtime.toISOString();
+    const lastUpdated = stats.mtime;
+    data.last_updated = lastUpdated.toISOString();
+    
+    // Calculate time until next rotation (90 second TTL, rotates at ~67% = 60s)
+    const now = new Date();
+    const ageSeconds = Math.floor((now - lastUpdated) / 1000);
+    const rotationInterval = 60; // Rotates every ~60 seconds
+    const secondsUntilRotation = Math.max(0, rotationInterval - ageSeconds);
+    data.rotation_in = `${secondsUntilRotation}s`;
     
     return {
       status: 'success',
@@ -169,9 +177,6 @@ function getPKIInfo() {
       data: {
         issued_at: issuedAt.toISOString(),
         expires_at: expiresAt.toISOString(),
-        age_seconds: ageSeconds,
-        seconds_remaining: Math.max(0, secondsRemaining),
-        rotation_in: secondsRemaining > 0 ? `${secondsRemaining}s` : 'ROTATING NOW',
         cert_size_bytes: certContent.length,
         has_private_key: keyExists ? 'Yes' : 'No',
         actively_serving: 'Yes - This HTTPS connection uses this cert!'
