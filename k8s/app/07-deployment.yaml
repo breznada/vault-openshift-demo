@@ -10,6 +10,7 @@ metadata:
     app: vault-demo-app
 spec:
   replicas: 1
+  revisionHistoryLimit: 2  # Keep only 2 old ReplicaSets for rollback
   selector:
     matchLabels:
       app: vault-demo-app
