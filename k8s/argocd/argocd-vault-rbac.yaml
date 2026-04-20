@@ -37,6 +37,7 @@ rules:
       - vaultstaticsecrets
       - vaultdynamicsecrets
       - vaultpkisecrets
+      - csisecrets
     verbs: ["get", "list", "create", "update", "patch", "delete"]
 
 ---
