@@ -117,11 +117,13 @@ spec:
           secretName: vault-dynamic-secret
           defaultMode: 0400
       
-      # Card 3: CSI secrets (direct mount from Vault)
+      # Card 3: CSI secrets (direct mount from Vault via CSI driver)
       - name: csi-secrets
-        secret:
-          secretName: vault-csi-secret
-          defaultMode: 0400
+        csi:
+          driver: csi.vso.hashicorp.com
+          volumeAttributes:
+            csiSecretsName: vault-csi-secrets
+            csiSecretsNamespace: vault-demo
       
       # Card 4: PKI certificate (Vault-issued TLS cert)
       - name: pki-cert

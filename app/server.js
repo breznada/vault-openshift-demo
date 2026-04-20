@@ -102,7 +102,7 @@ function getDynamicSecret() {
   }
 }
 
-// Card 3: CSI Secret from Direct Mount
+// Card 3: CSI Secret from Direct Mount (via Vault Secrets Operator CSI driver)
 function getCSISecret() {
   try {
     const csiPath = '/mnt/secrets/vault-data';
@@ -110,7 +110,7 @@ function getCSISecret() {
     if (!fs.existsSync(csiPath)) {
       return {
         status: 'error',
-        method: 'CSI Direct Mount',
+        method: 'CSI Direct Mount (VSO CSI Driver)',
         error: 'CSI mount path not found'
       };
     }
@@ -118,22 +118,36 @@ function getCSISecret() {
     const files = fs.readdirSync(csiPath);
     const data = {};
     
+    // CSI driver creates files with indexed names like:
+    // static_secret_0_api_key, static_secret_0_environment, etc.
     files.forEach(file => {
       const filePath = `${csiPath}/${file}`;
       if (fs.statSync(filePath).isFile()) {
-        data[file] = fs.readFileSync(filePath, 'utf8').trim();
+        // Clean up the file name for display (remove static_secret_0_ prefix)
+        const cleanName = file.replace(/^static_secret_\d+_/, '');
+        data[cleanName] = fs.readFileSync(filePath, 'utf8').trim();
       }
     });
     
+    // Get directory modification time to track updates
+    const stats = fs.statSync(csiPath);
+    const lastUpdated = stats.mtime;
+    data.last_updated = lastUpdated.toISOString();
+    
+    // Calculate age
+    const now = new Date();
+    const ageSeconds = Math.floor((now - lastUpdated) / 1000);
+    data.age_seconds = ageSeconds;
+    
     return {
       status: 'success',
-      method: 'CSI Direct Mount (Memory-Only)',
+      method: 'CSI Direct Mount (Updates every 1s without pod restart!)',
       data: data
     };
   } catch (error) {
     return {
       status: 'error',
-      method: 'CSI Direct Mount (Memory-Only)',
+      method: 'CSI Direct Mount (VSO CSI Driver)',
       error: error.message
     };
   }
